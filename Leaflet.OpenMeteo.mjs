@@ -137,6 +137,7 @@ export class OpenMeteo extends Control {
     options = {
         position: "bottomleft",
         title: "Open-Meteo",
+        autoTitle: false,
     };
 
     _tweakConfig() {
@@ -207,6 +208,10 @@ export class OpenMeteo extends Control {
             }
         }
         this._img.classList.add(imgClass);
+        // ROADMAP: have option to change title on update:
+        // NOSM = nominatim.openstreenmap.org
+        // fetch ${NOSM}/reverse?lat={}&lon={}&zoom=10&format=jsonv2
+        // take 'display_name' value and put in in the 'title'
 
         // To access __all__ styleSheets, you have to look at
         // document.styleSheets, document.adoptedStyleSheets, and
