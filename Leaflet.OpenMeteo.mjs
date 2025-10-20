@@ -110,6 +110,7 @@ export class OpenMeteo extends Control {
         // This would be easier if I let myself use .innerHTML, but....
         const cdiv = create('div', 'leaflet-control-openmeteo');
         const titlediv = create('h4', '', cdiv);
+        this._titlediv = titlediv;
         titlediv.textContent = this.options.title;
         const idiv = create('div', '', cdiv);
         const img = create('img', 'weatherIcon', idiv);
@@ -137,7 +138,6 @@ export class OpenMeteo extends Control {
     options = {
         position: "bottomleft",
         title: "Open-Meteo",
-        autoTitle: false,
     };
 
     _tweakConfig() {
@@ -208,10 +208,21 @@ export class OpenMeteo extends Control {
             }
         }
         this._img.classList.add(imgClass);
-        // ROADMAP: have option to change title on update:
-        // NOSM = nominatim.openstreenmap.org
-        // fetch ${NOSM}/reverse?lat={}&lon={}&zoom=10&format=jsonv2
-        // take 'display_name' value and put in in the 'title'
+        if (this.options.autoTitle) {
+            NOSM='https://nominatim.openstreetmap.org/reverse'
+            const center = this._map.getCenter();
+            let url = `${NOSM}?lat=${center.lat}&lon=${center.lng}`;
+            url = url + '&zoom=10&format=jsonv2';
+            try {
+                const r = fetch(url);
+                const j = r.json();
+                this._titlediv.textContent = j.display_name;
+            } catch (e) {
+                console.warn(`${e.name}: ${e.message}(${url})`);
+                // don't update the title is all....
+            }
+        }
+
 
         // To access __all__ styleSheets, you have to look at
         // document.styleSheets, document.adoptedStyleSheets, and
