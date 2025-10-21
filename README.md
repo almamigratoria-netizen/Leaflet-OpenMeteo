@@ -38,6 +38,7 @@ Just include the JS in your HTML.  The CSS is in the javascript file.  The metho
 ### Options
 * `position` - Leaflet [position option](https://leafletjs.com/reference.html#control-position) for Controls.
 * `title` - Title for control.  Defaults to "OpenMeteo".  Useful when creating multiple instances.
+* `autoTitle` - Looks up a place name using OSM.
 * `location` - Not to be confused with `position`, this is the lat/lng from where you want the weather.  Defaults to the center of the map.  Useful when creating multiple instances.
 * `wind_directions` - options are:
   * if undefined or ommitted, wind direction displayed in degrees
@@ -50,5 +51,4 @@ Just include the JS in your HTML.  The CSS is in the javascript file.  The metho
 
 ## License
 The Leaflet.OpenMeteo plugin is released under the [MIT License](https://opensource.org/license/mit)<br/>
-The weather images were taken from [XXX](https://github.com/xxx/yyy) and are licenced under the terms of [XXX](https://opensource.org/license/xxx)<br/>
 The [Open-Meteo API](https://open-meteo.com/en/pricing) has a tiered license, which you should check out if you plan on deploying this plugin in a commerical setting.
