@@ -1,19 +1,15 @@
 //
 //    Leaflet.Open-Meteo.mjs
+//      Leaflet v2 Control to display weather on the map
+//      Uses Open-Meteo API (free for non-commerical use)
 //
+
 import {Control, LatLng, Util} from 'leaflet';
 
 export class OpenMeteo extends Control {
-    // FIXME:  Need an initialize
-    // FIXME:  Move CSS stuffing to IFFE outside the class
-    //
-    // With evergreen browsers, we don't need external CSS
-    // 
-    // Question:  Do multiple instances write multiple CSS sheets?
-    //            should only need one.
 
     static {
-        // Not sure what should go here
+        // Not sure what should go here  :-(
     }
 
     initialize(options) {
@@ -24,10 +20,12 @@ export class OpenMeteo extends Control {
         this.name = OpenMeteo;
         Util.setOptions(this, default_options);
         Util.setOptions(this, options);
+        let foo = "bar";
     }
 
     _control_template() {
         // Easier to define the function ourselves than to import from leaflet
+        // It's small, so no need to import DOMUtil
         function create(tag, className='', mama=undefined) {
             const el = document.createElement(tag);
             el.className = className;
@@ -35,7 +33,8 @@ export class OpenMeteo extends Control {
             return el;
         };
 
-        // This would be easier if I let myself use .innerHTML, but....
+        // This would be easier if I let myself use .innerHTML
+        // So (needs test) should work even with retrictive CSP
         const cdiv = create('div', 'leaflet-control-openmeteo');
         const titlediv = create('h4', '', cdiv);
         this._titlediv = titlediv;
@@ -80,7 +79,6 @@ export class OpenMeteo extends Control {
     };
 
     onAdd(map) {
-        // do I need "this"?
         this._tweakConfig();
         this._div = this._control_template();
         map.on("moveend", this.refresh, this);  
@@ -90,10 +88,31 @@ export class OpenMeteo extends Control {
         return this._div;
     };
 
+    async refresh_autoTitle(titlediv) {
+        const NOSM='https://nominatim.openstreetmap.org/reverse'
+        const center = this._map.getCenter();
+        let url = `${NOSM}?lat=${center.lat}&lon=${center.lng}`;
+        url = url + '&zoom=10&format=jsonv2';
+
+        try {
+            const r = await fetch(url);
+            const j = await r.json();
+            if (j.error) {
+                titlediv.textContent = "Here be dragons";
+                return;
+            }
+            let c = j.address.city || j.address.municipality;
+            c = c || j.address.state || j.address.country;
+            c = c || 'Open-Meteo';
+            titlediv.textContent = c;
+        } catch (e) {
+            console.warn(`${e.name}: ${e.message}(${url})`);
+        }
+    }
+
     async refresh(ev) {
         function addUnits(weather_item) {
-            let s = current[weather_item] + units[weather_item];
-            return s;
+            return current[weather_item] + units[weather_item];
         }
         let center = this.options.center || this._map.getCenter();
         let url = "https://api.open-meteo.com/v1/forecast?latitude=";
@@ -114,78 +133,26 @@ export class OpenMeteo extends Control {
         const units = reply.current_units;
         this._tspan.textContent = addUnits("temperature_2m");
         this._hspan.textContent = addUnits("relative_humidity_2m");;
-        let wdir;
+        let wdir = current.wind_direction_10m;
         if (this.options.wdirs) {
             wdir = this.mapWindDirection(current.wind_direction_10m);
-        } else {
-            wdir = current.wind_direction_10m;
         }
         let wind = wdir + "@" + addUnits("wind_speed_10m");
         this._wspan.textContent = wind;
         const imgClass = "om-" + current.weather_code;
-        const cl = this._img.classList;
-        for (const c in cl) {
-            if (c.startsWith("om-")) {
-                this._img.classList.remove(c);
-            }
-        }
-        this._img.classList.add(imgClass);
+        this._img.classList = `weatherIcon ${imgClass}`;
+
+        // function's getting long... maybe refactor this into
+        // another function
         if (this.options.autoTitle) {
-            const NOSM='https://nominatim.openstreetmap.org/reverse'
-            const center = this._map.getCenter();
-            let url = `${NOSM}?lat=${center.lat}&lon=${center.lng}`;
-            url = url + '&zoom=10&format=jsonv2';
-
-            async function updateTitle(tdiv) {
-                try {
-                    const r = await fetch(url);
-                    const j = await r.json();
-                    let c = j.address.city || j.address.municipality;
-                    c = c || j.address.state || j.address.country;
-                    c = c || 'Open-Meteo';
-                    tdiv.textContent = c;
-                } catch (e) {
-                    console.warn(`${e.name}: ${e.message}(${url})`);
-                }
-            }
-            updateTitle(this._titlediv);
-        }
-
-
-        // To access __all__ styleSheets, you have to look at
-        // document.styleSheets, document.adoptedStyleSheets, and
-        // shadowRoot.adoptedStyleSheets.  I think.
-        function verifyStyle(selector) {
-            let haveRule = false;
-            const pattern = selector + "\\s*,?";
-            const re = new RegExp(pattern);
-            if (typeof document.adoptedStyleSheets !== "undefined") {
-                const cssSheets = document.adoptedStyleSheets;
-                outerloop: for (let i = 0; i < cssSheets.length; i++) {
-                    const rules = cssSheets[i].cssRules || cssSheets[i].rules;
-                    for (let j = 0; j < rules.length; j++) {
-                        let rtt = rules[j].selectorText;
-                        const match = re.exec(rtt);
-                        if (match) {
-                            haveRule = true;
-                            break outerloop;
-                        }
-                    }
-                }
-            }
-            return haveRule;
-        }
-
-        const classExists = verifyStyle(imgClass);
-        if (!classExists) {
-            const msg = `No icon for ${imgClass} (${current.weather_code})`;
-            console.warn(msg);
-            alert(msg);
+            this.refresh_autoTitle(this._titlediv);
         }
     };
 
     mapWindDirection(degrees) {
         // Map wind direction to things like "E" and "SW"
+        // or "from the slaughterhouse district", but that's too
+        // long to fit in the control...
         const tlen = this.options.wdirs.length;
         const divisor = 360 / (tlen);
         degrees = (degrees + (divisor/2)) % 360
@@ -196,8 +163,10 @@ export class OpenMeteo extends Control {
 
 export default OpenMeteo;
 
+// Not sure if minimizers will minify CSS embedded in js file
+// Should check on that....
 (function() {
-const our_CSS = `
+    const our_CSS = `
 .leaflet-control-openmeteo {
   color:#eee;
   background:#555;
@@ -212,7 +181,7 @@ const our_CSS = `
   height:50px;
   margin-right:10px;
 }
-.leaflet-control-openmeteo .weatherIcon img {
+.leaflet-control-openmeteo.weatherIcon img {
   float:left;
   max-width: 100% !important;
   height: 50px;
@@ -223,11 +192,12 @@ const our_CSS = `
   font-size: 1.5em;
   text-align: center;
 }
-.om {
-  max-width: 100% !important;
-  height: 50px;
-  width: 50px;
-}
+
+/* If the dataURL was smaller as base64, then base64'd it.  Some are, some
+ * are not.  Further reduction in size is probably possible.  CSS3 allows
+ * path:, but I haven't figured that one out, so for now....
+ */
+
 /* sunny */
 .om-0 {
     background-image: url('data:image/svg+xml,%3C%3Fxml version%3D"1.0" %3F%3E%3Csvg viewBox%3D"0 0 24 24" xmlns%3D"http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg"%3E%3Cpath%20d%3D%22M12%2017.01c2.76%200%205.01-2.25%205.01-5.01S14.76%206.99%2012%206.99%206.99%209.24%206.99%2012s2.25%205.01%205.01%205.01M12%209c1.66%200%203.01%201.35%203.01%203.01s-1.35%203.01-3.01%203.01-3.01-1.35-3.01-3.01S10.34%209%2012%209m1%2010h-2v3h2zm0-17h-2v3h2zM2%2011h3v2H2zm17%200h3v2h-3zM4.22%2018.36l.71.71.71.71%201.06-1.06%201.06-1.06-.71-.71-.71-.71-1.06%201.06zM19.78%205.64l-.71-.71-.71-.71-1.06%201.06-1.06%201.06.71.71.71.71%201.06-1.06zm-12.02.7L6.7%205.28%205.64%204.22l-.71.71-.71.71L5.28%206.7l1.06%201.06.71-.71zm8.48%2011.32%201.06%201.06%201.06%201.06.71-.71.71-.71-1.06-1.06-1.06-1.06-.71.71z%22%2F%3E%3C%2Fsvg%3E');
@@ -271,7 +241,8 @@ try {
     sheet.replaceSync(our_CSS);
     document.adoptedStyleSheets.push(sheet);
 } catch (e) {
-    // The rest, well... 
+    // According to caniuse, this should have worked on any browser that
+    // Leaflet v2 targets (evergreen).  The rest, well... 
     console.warn("You should replace your broken browser", e.message);
 }
 })();
