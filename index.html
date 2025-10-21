@@ -8,31 +8,38 @@
         height: 100%;
         width: 100%;
         padding: 0px !important;
+        margin: 0px;
+        overflow: hidden;
       }
     </style>
   </head>
   <body>
     <div id="mapdiv"></div>
-    <!-- Chances are if you're adding plugins, you're likely using 
-         plugins that aren't ESM ready, so we'll use the "global"
-         version for better compatibility.
-    -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/2.0.0-alpha.1/leaflet-global-src.js"></script>
-    <script src="./Leaflet.OpenMeteo.js"></script>
-    <script>
+    <script type='importmap'>
+    {
+      "imports": {
+        "leaflet": "https://cdnjs.cloudflare.com/ajax/libs/leaflet/2.0.0-alpha.1/leaflet.js",
+        "OpenMeteo": "./Leaflet.OpenMeteo.mjs"
+      }
+    }
+    </script>
+    <script type="module">
+      import { Map, TileLayer, Control} from 'leaflet';
+      import {OpenMeteo} from 'OpenMeteo';
+
       // Create a map in the "map" div, set the view to Berlin
-      const map = new L.Map('mapdiv').setView([52.5, 13.4], 13);
+      const map = new Map('mapdiv').setView([52.5, 13.4], 13);
 
       // add an OpenStreetMap tile layer
-      new L.TileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png').addTo(map);
+      new TileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png').addTo(map);
 
       // add the weather control that displays the weather 
       // at the center of the map
-      new L.Control.OpenMeteo().addTo(map);
+      new OpenMeteo({autoTitle: true}).addTo(map);
 
       // You can add multiple instances.
       // Add a control for London
-      new L.Control.OpenMeteo({
+      new OpenMeteo({
         title: "London",
         center: [51.5, -0.1],
       }).addTo(map);
