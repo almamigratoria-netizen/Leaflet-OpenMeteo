@@ -78,13 +78,23 @@ export class OpenMeteo extends Control {
         }
     };
 
+    _debounce(func, delay) {
+        let timer;
+        return function (...args) {
+            clearTimeout(timer);
+            timer = setTimeout(() => func.apply(this, args), delay);
+        };
+    }
+
     onAdd(map) {
         this._tweakConfig();
         this._div = this._control_template();
-        map.on("moveend", this.refresh, this);  
         // Wall/MagicMirror displays might never get panned, so...
-        window.setInterval(this.refresh.bind(this), 3600000);
-        this.refresh(); // Initialize the data
+        const rfunc = this.refresh.bind(this);
+        const debounced_update = this._debounce(rfunc, 750);
+        window.setInterval(debounced_update, 3600000);
+        map.on("moveend", debounced_update, this);  
+        debounced_update(); // Initialize the data
         return this._div;
     };
 
@@ -123,8 +133,12 @@ export class OpenMeteo extends Control {
         // FIXME: Figure out how to debounce this.  15 seconds?
         let reply;
         try {
-            const response = await fetch(url);
-            reply = await(response.json());
+            const r = await fetch(url);
+            reply = await(r.json());
+            if (!r.ok) {
+                let e = new Error(`fetch(${r.statusText})`);
+                throw(e);
+            }
         } catch (e) {
             console.error(`Leaflet.OpenMeteo: ${e.name} ${e.message}`);
             return;
@@ -176,7 +190,6 @@ export default OpenMeteo;
 }
 .leaflet-control-openmeteo .weatherIcon {
   float:left;
-  border:1px solid #555;
   width:50px;
   height:50px;
   margin-right:10px;
@@ -184,13 +197,16 @@ export default OpenMeteo;
 .leaflet-control-openmeteo.weatherIcon img {
   float:left;
   max-width: 100% !important;
-  height: 50px;
-  width: 50px;
+  height: 100%;
+  width: 100%;
+  object-fit: fill;
   stroke-width: 2px;
 }
 .leaflet-control-openmeteo h4 {
   font-size: 1.5em;
   text-align: center;
+  margin-block-start: 12px;
+  margin-block-end: 12px;
 }
 
 /* If the dataURL was smaller as base64, then base64'd it.  Some are, some
