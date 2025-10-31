@@ -7,11 +7,6 @@
 import {Control, LatLng, Util} from 'leaflet';
 
 export class OpenMeteo extends Control {
-
-    static {
-        // Not sure what should go here  :-(
-    }
-
     initialize(options) {
         const default_options = {
             position: "bottomleft",
@@ -20,7 +15,6 @@ export class OpenMeteo extends Control {
         this.name = OpenMeteo;
         Util.setOptions(this, default_options);
         Util.setOptions(this, options);
-        let foo = "bar";
     }
 
     _control_template() {
@@ -31,7 +25,7 @@ export class OpenMeteo extends Control {
             el.className = className;
             mama?.appendChild(el);
             return el;
-        };
+        }
 
         // This would be easier if I let myself use .innerHTML
         // So (needs test) should work even with retrictive CSP
@@ -60,12 +54,12 @@ export class OpenMeteo extends Control {
         this._wspan = s1;
 
         return cdiv;
-    };
+    }
 
     _tweakConfig() {
         if (this.options.center) {
             let p = this.options.center;
-            this.options.center = new L.LatLng(p[0], [1]);
+            this.options.center = new LatLng(p[0], [1]);
         }
         if (this.options.wind_directions) {
             if (this.options.wind_directions.toLowerCase() == "default") {
@@ -76,7 +70,7 @@ export class OpenMeteo extends Control {
                 this.options.wdirs = this.option.wind_drections; 
             }
         }
-    };
+    }
 
     _debounce(func, delay) {
         let timer;
@@ -96,10 +90,10 @@ export class OpenMeteo extends Control {
         map.on("moveend", debounced_update, this);  
         debounced_update(); // Initialize the data
         return this._div;
-    };
+    }
 
     async refresh_autoTitle(titlediv) {
-        const NOSM='https://nominatim.openstreetmap.org/reverse'
+        const NOSM='https://nominatim.openstreetmap.org/reverse';
         const center = this._map.getCenter();
         let url = `${NOSM}?lat=${center.lat}&lon=${center.lng}`;
         url = url + '&zoom=10&format=jsonv2';
@@ -120,15 +114,15 @@ export class OpenMeteo extends Control {
         }
     }
 
-    async refresh(ev) {
+    async refresh() {
         function addUnits(weather_item) {
             return current[weather_item] + units[weather_item];
         }
         let center = this.options.center || this._map.getCenter();
         let url = "https://api.open-meteo.com/v1/forecast?latitude=";
         url = url + center.lat + "&longitude=" + center.lng;
-        url = url + "&current=temperature_2m,relative_humidity_2m,"
-        url = url + "wind_speed_10m,wind_direction_10m,precipitation,"
+        url = url + "&current=temperature_2m,relative_humidity_2m,";
+        url = url + "wind_speed_10m,wind_direction_10m,precipitation,";
         url = url + "rain,showers,weather_code,cloud_cover,uv_index";
         // FIXME: Figure out how to debounce this.  15 seconds?
         let reply;
@@ -146,7 +140,7 @@ export class OpenMeteo extends Control {
         const current = reply.current;
         const units = reply.current_units;
         this._tspan.textContent = addUnits("temperature_2m");
-        this._hspan.textContent = addUnits("relative_humidity_2m");;
+        this._hspan.textContent = addUnits("relative_humidity_2m");
         let wdir = current.wind_direction_10m;
         if (this.options.wdirs) {
             wdir = this.mapWindDirection(current.wind_direction_10m);
@@ -161,7 +155,7 @@ export class OpenMeteo extends Control {
         if (this.options.autoTitle) {
             this.refresh_autoTitle(this._titlediv);
         }
-    };
+    }
 
     mapWindDirection(degrees) {
         // Map wind direction to things like "E" and "SW"
@@ -169,11 +163,11 @@ export class OpenMeteo extends Control {
         // long to fit in the control...
         const tlen = this.options.wdirs.length;
         const divisor = 360 / (tlen);
-        degrees = (degrees + (divisor/2)) % 360
+        degrees = (degrees + (divisor/2)) % 360;
         let d = Math.round(degrees/divisor) % (tlen);
         return this.options.wdirs[d];
     }
-};
+}
 
 export default OpenMeteo;
 
