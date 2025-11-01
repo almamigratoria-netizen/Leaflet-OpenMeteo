@@ -34,15 +34,14 @@
       // add an OpenStreetMap tile layer
       new TileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png').addTo(map);
 
-      // add the weather control that displays the weather 
-      // at the center of the map
+      // add control that displays the weather at the center of the map
       new OpenMeteo({autoTitle: true}).addTo(map);
 
       // You can add multiple instances.
-      // Add a control for London
       new OpenMeteo({
         title: "London",
         center: [51.5, -0.1],
+        wind_directions: 'default',
       }).addTo(map);
     </script>
   </body>
