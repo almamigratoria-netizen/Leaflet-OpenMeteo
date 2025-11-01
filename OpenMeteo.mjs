@@ -164,7 +164,7 @@ export class OpenMeteo extends Control {
         const tlen = this.options.wdirs.length;
         const divisor = 360 / (tlen);
         degrees = (degrees + (divisor/2)) % 360;
-        let d = Math.round(degrees/divisor) % (tlen);
+        let d = Math.floor(degrees/divisor) % (tlen);
         return this.options.wdirs[d];
     }
 }
