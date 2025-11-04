@@ -83,10 +83,10 @@ export class OpenMeteo extends Control {
     onAdd(map) {
         this._tweakConfig();
         this._div = this._control_template();
-        // Wall/MagicMirror displays might never get panned, so...
         const rfunc = this.refresh.bind(this);
         const debounced_update = this._debounce(rfunc, 750);
-        window.setInterval(debounced_update, 3600000);
+        // Wall/MagicMirror displays might never get panned, so...
+        window.setInterval(debounced_update, 3600000); // one hour
         map.on("moveend", debounced_update, this);  
         debounced_update(); // Initialize the data
         return this._div;
@@ -124,7 +124,6 @@ export class OpenMeteo extends Control {
         url = url + "&current=temperature_2m,relative_humidity_2m,";
         url = url + "wind_speed_10m,wind_direction_10m,precipitation,";
         url = url + "rain,showers,weather_code,cloud_cover,uv_index";
-        // FIXME: Figure out how to debounce this.  15 seconds?
         let reply;
         try {
             const r = await fetch(url);
@@ -150,8 +149,6 @@ export class OpenMeteo extends Control {
         const imgClass = "om-" + current.weather_code;
         this._img.classList = `weatherIcon ${imgClass}`;
 
-        // function's getting long... maybe refactor this into
-        // another function
         if (this.options.autoTitle) {
             this.refresh_autoTitle(this._titlediv);
         }
@@ -171,8 +168,9 @@ export class OpenMeteo extends Control {
 
 export default OpenMeteo;
 
-// Not sure if minimizers will minify CSS embedded in js file
-// Should check on that....
+
+// Code that runs on module load, not instance instantiation.
+//
 (function() {
     const our_CSS = `
 .leaflet-control-openmeteo {
