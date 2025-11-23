@@ -9,7 +9,7 @@ the [Open-Meteo API](https://www.open-meteo.com).  It was inspired by
 the [ Leaflet.Weather ](https://github.com/oskosk/Leaflet.Weather) plugin.  
 Primary differences are that Leaflet.OpenMeteo has no dependancies 
 (no JQuery), the Open-Meteo api doesn't require an API key (for non-
-commerial use), and is for Leaflet version 2. 
+commerial use), and is for Leaflet version 2.   There is a version for Leaflet v1 [here](https://github.com/almamigratoria-netizen/Leaflet.OpenMeteo).
 
 [<img src="screenshot.png">](./screenshot.png)
 <br/>
